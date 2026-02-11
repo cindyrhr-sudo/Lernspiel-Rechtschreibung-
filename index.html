@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lernspiel-Sammlung - Karteikasten Edition</title>
     <style>
-        /* --- DEIN ORIGINAL-DESIGN (BLEIBT EXAKT GLEICH) --- */
+        /* --- DEIN ORIGINAL-DESIGN --- */
         #main-menu {
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             height: 100vh; background: linear-gradient(135deg, #7ed957, #5d8aff);
@@ -26,6 +26,16 @@
             position: absolute; top: 10px; left: 10px; padding: 8px 15px;
             background: #333; color: white; border-radius: 10px; cursor: pointer;
             font-family: sans-serif; font-size: 14px; z-index: 1000; border: none;
+        }
+
+        /* Titelzeile Style */
+        .game-title-header {
+            font-size: 24px;
+            color: #1e3a8a;
+            margin-bottom: 20px;
+            font-weight: bold;
+            border-bottom: 2px dashed #ccc;
+            padding-bottom: 10px;
         }
 
         .box-status-container {
@@ -75,6 +85,7 @@
         .teacher-card { background: white; padding: 20px; border-radius: 20px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
         .teacher-btn-save { background: #4CAF50; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; margin-top: 15px; width: 100%; font-weight: bold; }
         .teacher-btn-link { background: #2196F3; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; margin-top: 5px; width: 100%; font-weight: bold; }
+        .teacher-input-title { width: 100%; margin-bottom: 10px; padding: 5px; border: 1px solid #ccc; border-radius: 5px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -93,12 +104,18 @@
     <div id="teacher-overlay">
         <div class="teacher-card">
             <h2>Lehrerbereich</h2>
-            <label>Spiel 1 (Wort/r, Wort/f)</label>
-            <textarea id="input-g1" style="width:100%; height:60px;">Katze/r, Katse/f, Jacke/r, Jake/f, sitzen/r, sizen/f, dreckig/r, drekig/f</textarea>
-            <label>Spiel 2 (Ba/ck/en)</label>
-            <textarea id="input-g2" style="width:100%; height:60px;">Ka/tz/e, Ja/ck/e, si/tz/en, dre/ck/ig, E/ck/e, Schne/ck/e</textarea>
-            <label>Spiel 3 (Nur Wörter)</label>
-            <textarea id="input-g3" style="width:100%; height:60px;">Katze, Jacke, sitzen, dreckig, Ecke, Schnecke</textarea>
+            
+            <p><strong>Spiel 1: Rechtschreib-Held</strong></p>
+            <input type="text" id="title-g1" class="teacher-input-title" placeholder="Titel für Spiel 1">
+            <textarea id="input-g1" style="width:100%; height:60px;">Katze/r, Katse/f, Jacke/r, Jake/f</textarea>
+            
+            <p><strong>Spiel 2: Rechtschreib-Profi</strong></p>
+            <input type="text" id="title-g2" class="teacher-input-title" placeholder="Titel für Spiel 2">
+            <textarea id="input-g2" style="width:100%; height:60px;">Ka/tz/e, Ja/ck/e, si/tz/en</textarea>
+            
+            <p><strong>Spiel 3: Schreib-Profi</strong></p>
+            <input type="text" id="title-g3" class="teacher-input-title" placeholder="Titel für Spiel 3">
+            <textarea id="input-g3" style="width:100%; height:60px;">Katze, Jacke, sitzen</textarea>
             
             <button class="teacher-btn-save" onclick="saveTeacherData()">Lokal Speichern</button>
             <button class="teacher-btn-link" onclick="generateShareLink()">🔗 Link für Schüler kopieren</button>
@@ -109,6 +126,7 @@
     <div id="wrapper1" class="game-wrapper g1-body">
         <button class="back-btn" onclick="goToMenu()">🏠 Menü</button>
         <div id="g1-container">
+            <div id="display-title-g1" class="game-title-header"></div>
             <div class="box-status-container" id="g1-box-status"></div>
             <div id="g1-game-screen">
                 <div id="g1-progress">Frage 1 von 10</div>
@@ -130,6 +148,7 @@
     <div id="wrapper2" class="game-wrapper g2-body">
         <button class="back-btn" onclick="goToMenu()">🏠 Menü</button>
         <div id="g2-container">
+            <div id="display-title-g2" class="game-title-header"></div>
             <div class="box-status-container" id="g2-box-status"></div>
             <div id="g2-game-screen">
                 <div id="g2-progress">Frage 1 von 10</div>
@@ -148,6 +167,7 @@
     <div id="wrapper3" class="game-wrapper g3-body">
         <button class="back-btn" onclick="goToMenu()">🏠 Menü</button>
         <div id="g3-container">
+            <div id="display-title-g3" class="game-title-header"></div>
             <div class="box-status-container" id="g3-box-status"></div>
             <div id="g3-game-screen">
                 <div id="g3-progress-text">Wort 1 von 10</div>
@@ -168,17 +188,19 @@
     </div>
 
     <script>
-        // --- URL SPEICHER LOGIK ---
         function generateShareLink() {
             const data = {
                 g1: document.getElementById('input-g1').value,
                 g2: document.getElementById('input-g2').value,
-                g3: document.getElementById('input-g3').value
+                g3: document.getElementById('input-g3').value,
+                t1: document.getElementById('title-g1').value,
+                t2: document.getElementById('title-g2').value,
+                t3: document.getElementById('title-g3').value
             };
             const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
             const url = window.location.origin + window.location.pathname + "?data=" + encoded;
             navigator.clipboard.writeText(url).then(() => {
-                alert("Link wurde kopiert! Diesen Link können die Schüler nun öffnen.");
+                alert("Link mit Titeln kopiert!");
             });
         }
 
@@ -188,15 +210,17 @@
             if (encodedData) {
                 try {
                     const decoded = JSON.parse(decodeURIComponent(escape(atob(encodedData))));
-                    document.getElementById('input-g1').value = decoded.g1;
-                    document.getElementById('input-g2').value = decoded.g2;
-                    document.getElementById('input-g3').value = decoded.g3;
+                    document.getElementById('input-g1').value = decoded.g1 || "";
+                    document.getElementById('input-g2').value = decoded.g2 || "";
+                    document.getElementById('input-g3').value = decoded.g3 || "";
+                    document.getElementById('title-g1').value = decoded.t1 || "";
+                    document.getElementById('title-g2').value = decoded.t2 || "";
+                    document.getElementById('title-g3').value = decoded.t3 || "";
                     saveTeacherData(false); 
                 } catch(e) { console.error("URL-Daten fehlerhaft"); }
             }
         }
 
-        // --- KARTEIKASTENSYSTEM (ORIGINAL) ---
         const BoxSystem = {
             progress: {},
             loadProgress() {
@@ -269,11 +293,13 @@
             }
         };
 
-        // --- STEUERUNG ---
         function saveTeacherData(alertUser = true) {
             localStorage.setItem('g1_data', document.getElementById('input-g1').value);
             localStorage.setItem('g2_data', document.getElementById('input-g2').value);
             localStorage.setItem('g3_data', document.getElementById('input-g3').value);
+            localStorage.setItem('g1_title', document.getElementById('title-g1').value);
+            localStorage.setItem('g2_title', document.getElementById('title-g2').value);
+            localStorage.setItem('g3_title', document.getElementById('title-g3').value);
             BoxSystem.updateBoxDisplay();
             if(alertUser) { alert("Gespeichert!"); toggleTeacher(false); }
         }
@@ -282,6 +308,9 @@
             if(localStorage.getItem('g1_data')) document.getElementById('input-g1').value = localStorage.getItem('g1_data');
             if(localStorage.getItem('g2_data')) document.getElementById('input-g2').value = localStorage.getItem('g2_data');
             if(localStorage.getItem('g3_data')) document.getElementById('input-g3').value = localStorage.getItem('g3_data');
+            if(localStorage.getItem('g1_title')) document.getElementById('title-g1').value = localStorage.getItem('g1_title');
+            if(localStorage.getItem('g2_title')) document.getElementById('title-g2').value = localStorage.getItem('g2_title');
+            if(localStorage.getItem('g3_title')) document.getElementById('title-g3').value = localStorage.getItem('g3_title');
             loadFromURL();
             BoxSystem.loadProgress();
             BoxSystem.updateBoxDisplay();
@@ -294,11 +323,17 @@
         }
 
         function toggleTeacher(s) { document.getElementById('teacher-overlay').style.display = s ? 'flex' : 'none'; }
-        function startG1() { document.getElementById('main-menu').style.display = 'none'; document.getElementById('wrapper1').style.display = 'flex'; Game1.startGame(); }
-        function startG2() { document.getElementById('main-menu').style.display = 'none'; document.getElementById('wrapper2').style.display = 'flex'; Game2.startGame(); }
-        function startG3() { document.getElementById('main-menu').style.display = 'none'; document.getElementById('wrapper3').style.display = 'flex'; Game3.startGame(); }
+        
+        function updateDisplayTitles() {
+            document.getElementById('display-title-g1').innerText = document.getElementById('title-g1').value;
+            document.getElementById('display-title-g2').innerText = document.getElementById('title-g2').value;
+            document.getElementById('display-title-g3').innerText = document.getElementById('title-g3').value;
+        }
 
-        // --- SPIEL 1 LOGIK (ORIGINAL) ---
+        function startG1() { updateDisplayTitles(); document.getElementById('main-menu').style.display = 'none'; document.getElementById('wrapper1').style.display = 'flex'; Game1.startGame(); }
+        function startG2() { updateDisplayTitles(); document.getElementById('main-menu').style.display = 'none'; document.getElementById('wrapper2').style.display = 'flex'; Game2.startGame(); }
+        function startG3() { updateDisplayTitles(); document.getElementById('main-menu').style.display = 'none'; document.getElementById('wrapper3').style.display = 'flex'; Game3.startGame(); }
+
         const Game1 = {
             currentRound: 0, score: 0, activePool: [], currentWord: [],
             startGame() {
@@ -336,7 +371,6 @@
             }
         };
 
-        // --- SPIEL 2 LOGIK (ORIGINAL) ---
         const Game2 = {
             activePool: [], currentRound: 0, score: 0, currentTask: {},
             startGame() {
@@ -380,7 +414,6 @@
             }
         };
 
-        // --- SPIEL 3 LOGIK (ORIGINAL) ---
         const Game3 = {
             currentRound: 0, score: 0, activePool: [], currentWord: "",
             startGame() {
