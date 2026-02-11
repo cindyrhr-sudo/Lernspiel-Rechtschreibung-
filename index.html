@@ -2,463 +2,397 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Lernspiel-Sammlung - Karteikasten Edition</title>
     <style>
-        /* --- DEIN ORIGINAL-DESIGN --- */
-        #main-menu {
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            height: 100vh; background: linear-gradient(135deg, #7ed957, #5d8aff);
-            font-family: 'Comic Sans MS', cursive, sans-serif;
-        }
-        .menu-card { background: white; padding: 40px; border-radius: 40px; text-align: center; box-shadow: 0 15px 30px rgba(0,0,0,0.2); }
-        .menu-btn {
-            display: block; width: 100%; padding: 20px; margin: 15px 0;
-            font-size: 22px; font-weight: bold; border: none; border-radius: 20px;
-            cursor: pointer; color: white; transition: 0.2s;
-        }
-        .btn-g1 { background-color: #4CAF50; }
-        .btn-g2 { background-color: #5d8aff; }
-        .btn-g3 { background-color: #ff9800; }
-        
-        .game-wrapper { display: none; width: 100%; height: 100vh; position: relative; }
-        .back-btn {
-            position: absolute; top: 10px; left: 10px; padding: 8px 15px;
-            background: #333; color: white; border-radius: 10px; cursor: pointer;
-            font-family: sans-serif; font-size: 14px; z-index: 1000; border: none;
+        /* --- BASIS & ANTI-SCROLL --- */
+        body, html { 
+            margin: 0; padding: 0; 
+            height: 100dvh; width: 100vw;
+            font-family: 'Comic Sans MS', cursive, sans-serif; 
+            overflow: hidden; 
+            background: linear-gradient(135deg, #7ed957, #5d8aff);
         }
 
-        /* Titelzeile Style */
+        /* --- LAYOUT SYSTEM --- */
+        .game-wrapper {
+            display: none;
+            width: 100%;
+            height: 100dvh;
+            padding: 15px;
+            box-sizing: border-box;
+            gap: 20px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* QUERFORMAT (Desktop / iPad Quer) */
+        @media (orientation: landscape) {
+            .game-wrapper { flex-direction: row; }
+            .box-sidebar { 
+                width: 20vw; 
+                height: 80%; 
+                flex-direction: column-reverse; /* Box 4 nach oben */
+            }
+            .task-container { width: 70vw; height: 85dvh; }
+        }
+
+        /* HOCHFORMAT (Handy / iPad Hoch) */
+        @media (orientation: portrait) {
+            .game-wrapper { flex-direction: column; justify-content: flex-start; padding-top: 60px; }
+            .box-sidebar { 
+                width: 100%; 
+                height: auto; 
+                flex-direction: row; /* Box 1-4 nebeneinander */
+                order: -1; /* Sidebar nach oben */
+            }
+            .task-container { width: 100%; flex-grow: 1; margin-bottom: 20px; }
+        }
+
+        /* --- DIE INSEL (SIDEBAR) --- */
+        .box-sidebar {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            padding: 12px;
+            border-radius: 20px;
+            border: 2px solid rgba(255,255,255,0.5);
+            display: flex;
+            gap: 10px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            z-index: 10;
+        }
+
+        /* --- DER AUFGABEN-RAHMEN --- */
+        .task-container {
+            background-color: white;
+            border-radius: 35px;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-sizing: border-box;
+            text-align: center;
+            position: relative;
+            max-height: 90dvh;
+        }
+
+        /* --- ELEMENTE IM SPIEL --- */
         .game-title-header {
-            font-size: 24px;
+            font-size: clamp(16px, 4vh, 22px);
             color: #1e3a8a;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
             font-weight: bold;
-            border-bottom: 2px dashed #ccc;
-            padding-bottom: 10px;
+            border-bottom: 2px dashed #eee;
+            padding-bottom: 8px;
         }
 
-        .box-status-container {
-            display: flex; gap: 8px; justify-content: center; margin-bottom: 15px;
-            font-family: sans-serif;
-        }
         .box-indicator {
-            background: #f0f0f0; border: 2px solid #ccc; border-radius: 8px;
-            padding: 5px 10px; min-width: 40px; text-align: center;
+            background: white; border: 2px solid #ccc; border-radius: 12px;
+            padding: 5px; flex: 1; display: flex; flex-direction: column; justify-content: center;
         }
-        .box-indicator.active-box { border-color: #5d8aff; background: #eef4ff; }
-        .box-indicator.goal-box { border-color: #ffd700; background: #fffdf0; font-weight: bold; }
-        .box-label { font-size: 10px; display: block; color: #666; text-transform: uppercase; }
-        .box-count { font-size: 18px; font-weight: bold; color: #333; }
+        .goal-box { border-color: #ffd700; background: #fffdf0; box-shadow: 0 0 10px rgba(255,215,0,0.3); }
+        .box-label { font-size: 9px; color: #666; text-transform: uppercase; }
+        .box-count { font-size: 18px; font-weight: bold; }
 
-        .g1-body { background-color: #eef9bf; font-family: 'Comic Sans MS', 'Segoe UI', cursive, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        #g1-container { background-color: white; padding: 30px; border-radius: 40px; box-shadow: 0 15px 0px #aad922; text-align: center; max-width: 600px; width: 90%; border: 6px solid #7ed957; }
-        #g1-progress { font-size: 18px; color: #666; margin-bottom: 10px; }
-        #g1-word-display { font-size: 56px; font-weight: bold; margin: 30px 0; color: #2c3e50; }
-        .g1-btn-container { display: flex; justify-content: center; gap: 25px; }
-        .g1-btn { padding: 20px 40px; font-size: 24px; font-weight: bold; border: none; border-radius: 25px; cursor: pointer; color: white; box-shadow: 0 6px 0px rgba(0,0,0,0.2); transition: all 0.1s; }
-        .g1-btn:active { transform: translateY(4px); box-shadow: 0 2px 0px rgba(0,0,0,0.2); }
-        .g1-correct { background-color: #4CAF50; }
-        .g1-wrong { background-color: #F44336; }
-        #g1-feedback { margin-top: 25px; font-size: 26px; font-weight: bold; min-height: 40px; }
-
-        .g2-body { background-color: #f0f4ff; font-family: 'Comic Sans MS', cursive, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        #g2-container { background-color: white; padding: 40px; border-radius: 40px; box-shadow: 0 15px 0px #adc4ff; text-align: center; max-width: 650px; width: 90%; border: 6px solid #5d8aff; }
-        #g2-word-container { font-size: 55px; font-weight: bold; margin: 25px 0; color: #2c3e50; display: flex; justify-content: center; align-items: center; }
-        #g2-user-input { font-family: inherit; font-size: 45px; width: 90px; text-align: center; border: 4px dashed #5d8aff; border-radius: 15px; background-color: #f9fbff; color: #1e3a8a; margin: 0 10px; }
-
-        .g3-body { background-color: #e0f7fa; font-family: 'Comic Sans MS', cursive, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        #g3-container { background-color: white; padding: 40px; border-radius: 40px; box-shadow: 0 15px 0px #81d4fa; text-align: center; max-width: 600px; width: 90%; border: 6px solid #0288d1; }
-        #g3-word-display { font-size: 70px; font-weight: bold; margin: 30px 0; color: #d32f2f; min-height: 100px; }
-        .g3-btn { padding: 20px 40px; font-size: 22px; font-weight: bold; border: none; border-radius: 25px; cursor: pointer; color: white; box-shadow: 0 6px 0px rgba(0,0,0,0.2); transition: 0.1s; }
-        .g3-btn-speak { background-color: #ff9800; margin-bottom: 20px; width: 100%; }
-        .g3-btn-show { background-color: #2196f3; width: 100%; }
-        .g3-choice-container { display: flex; justify-content: center; gap: 20px; display: none; }
+        .word-display { font-size: clamp(35px, 10vh, 60px); font-weight: bold; margin: auto 0; padding: 20px 0; }
         
+        /* Buttons */
+        .btn-group { display: flex; gap: 15px; justify-content: center; margin-top: auto; }
+        .action-btn { 
+            padding: 15px 30px; font-size: 20px; font-weight: bold; 
+            border: none; border-radius: 20px; cursor: pointer; color: white;
+            transition: transform 0.1s;
+        }
+        .action-btn:active { transform: scale(0.95); }
+
+        /* Farbschemata */
+        .g1-border { border: 6px solid #7ed957; box-shadow: 0 10px 0px #aad922; }
+        .g2-border { border: 6px solid #5d8aff; box-shadow: 0 10px 0px #adc4ff; }
+        .g3-border { border: 6px solid #ff9800; box-shadow: 0 10px 0px #ffb74d; }
+
+        /* Menü & Teacher */
+        #main-menu { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100dvh; }
+        .menu-card { background: white; padding: 30px; border-radius: 30px; width: 80%; max-width: 400px; text-align: center; }
+        .menu-btn { width: 100%; padding: 15px; margin: 10px 0; border-radius: 15px; border: none; color: white; font-weight: bold; font-size: 18px; cursor: pointer; }
+        
+        .back-btn { position: absolute; top: 10px; left: 10px; padding: 8px 15px; background: #333; color: white; border-radius: 10px; border: none; z-index: 100; cursor: pointer; }
         .hidden { display: none !important; }
 
-        #teacher-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); z-index: 2000; display: none;
-            justify-content: center; align-items: center; font-family: sans-serif;
+        #teacher-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 2000; display: none; justify-content: center; align-items: center; }
+        .teacher-card { background: white; padding: 20px; border-radius: 20px; width: 90%; max-width: 500px; max-height: 80dvh; overflow-y: auto; }
+        
+        input#g2-user-input { 
+            font-size: clamp(30px, 8vh, 50px); width: 120px; border: 3px dashed #5d8aff; 
+            border-radius: 15px; text-align: center; font-family: inherit;
         }
-        .teacher-card { background: white; padding: 20px; border-radius: 20px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
-        .teacher-btn-save { background: #4CAF50; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; margin-top: 15px; width: 100%; font-weight: bold; }
-        .teacher-btn-link { background: #2196F3; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; margin-top: 5px; width: 100%; font-weight: bold; }
-        .teacher-input-title { width: 100%; margin-bottom: 10px; padding: 5px; border: 1px solid #ccc; border-radius: 5px; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div id="main-menu">
         <div class="menu-card">
-            <h1 style="margin-top:0">Lernspiel-Sammlung</h1>
-            <button class="menu-btn btn-g1" onclick="startG1()">Rechtschreib-Held</button>
-            <button class="menu-btn btn-g2" onclick="startG2()">Rechtschreib-Profi</button>
-            <button class="menu-btn btn-g3" onclick="startG3()">Schreib-Profi</button>
-            <button class="menu-btn btn-teacher-open" style="background: #9c27b0; font-size:16px;" onclick="toggleTeacher(true)">⚙️ Lehrerbereich</button>
-            <button class="menu-btn" style="background:#888; font-size:14px; padding:5px;" onclick="BoxSystem.resetProgress()">🔄 Fortschritt löschen</button>
+            <h1 style="margin-top:0">Lernspiele</h1>
+            <button class="menu-btn" style="background:#4CAF50" onclick="startGame(1)">Rechtschreib-Held</button>
+            <button class="menu-btn" style="background:#5d8aff" onclick="startGame(2)">Rechtschreib-Profi</button>
+            <button class="menu-btn" style="background:#ff9800" onclick="startGame(3)">Schreib-Profi</button>
+            <button class="menu-btn" style="background:#9c27b0" onclick="toggleTeacher(true)">⚙️ Lehrer</button>
+        </div>
+    </div>
+
+    <div id="game-wrapper" class="game-wrapper">
+        <button class="back-btn" onclick="goToMenu()">🏠 Menü</button>
+        
+        <div class="box-sidebar" id="box-status-bar">
+            </div>
+
+        <div id="active-task-container" class="task-container">
+            <div id="game-title" class="game-title-header">Titel</div>
+            <div id="game-content">
+                <div id="game-progress" style="color: #666; font-size: 14px;">Wort 1 von 10</div>
+                
+                <div id="ui-g1" class="hidden">
+                    <div id="g1-word" class="word-display">Wort</div>
+                    <div class="btn-group">
+                        <button class="action-btn" style="background:#4CAF50" onclick="Game1.handleAnswer(true)">RICHTIG</button>
+                        <button class="action-btn" style="background:#F44336" onclick="Game1.handleAnswer(false)">FALSCH</button>
+                    </div>
+                </div>
+
+                <div id="ui-g2" class="hidden">
+                    <div id="g2-area" class="word-display" style="display: flex; justify-content: center; align-items: center;">
+                        <span id="g2-pre"></span>
+                        <input type="text" id="g2-user-input" autocomplete="off" autofocus>
+                        <span id="g2-post"></span>
+                    </div>
+                    <button class="action-btn" style="background:#5d8aff; width:100%" onclick="Game2.checkInput()">Prüfen!</button>
+                </div>
+
+                <div id="ui-g3" class="hidden">
+                    <button class="action-btn" style="background:#ff9800; width:100%; margin-bottom:10px;" onclick="Game3.speakWord()">🔊 Hören</button>
+                    <div id="g3-word" class="word-display">???</div>
+                    <button id="g3-show-btn" class="action-btn" style="background:#2196f3; width:100%" onclick="Game3.showWord()">Vergleichen</button>
+                    <div id="g3-choice" class="btn-group hidden">
+                        <button class="action-btn" style="background:#4CAF50" onclick="Game3.handleResult(true)">✅ Stimmt</button>
+                        <button class="action-btn" style="background:#F44336" onclick="Game3.handleResult(false)">❌ Falsch</button>
+                    </div>
+                </div>
+
+                <div id="game-feedback" style="font-size: 24px; font-weight: bold; margin-top: 15px; min-height: 30px;"></div>
+            </div>
+
+            <div id="result-screen" class="hidden">
+                <h1 id="result-text">Super!</h1>
+                <button class="action-btn" style="background:#333" onclick="restartCurrentGame()">Nochmal</button>
+            </div>
         </div>
     </div>
 
     <div id="teacher-overlay">
         <div class="teacher-card">
-            <h2>Lehrerbereich</h2>
-            
-            <p><strong>Spiel 1: Rechtschreib-Held</strong></p>
-            <input type="text" id="title-g1" class="teacher-input-title" placeholder="Titel für Spiel 1">
-            <textarea id="input-g1" style="width:100%; height:60px;">Katze/r, Katse/f, Jacke/r, Jake/f</textarea>
-            
-            <p><strong>Spiel 2: Rechtschreib-Profi</strong></p>
-            <input type="text" id="title-g2" class="teacher-input-title" placeholder="Titel für Spiel 2">
-            <textarea id="input-g2" style="width:100%; height:60px;">Ka/tz/e, Ja/ck/e, si/tz/en</textarea>
-            
-            <p><strong>Spiel 3: Schreib-Profi</strong></p>
-            <input type="text" id="title-g3" class="teacher-input-title" placeholder="Titel für Spiel 3">
-            <textarea id="input-g3" style="width:100%; height:60px;">Katze, Jacke, sitzen</textarea>
-            
-            <button class="teacher-btn-save" onclick="saveTeacherData()">Lokal Speichern</button>
-            <button class="teacher-btn-link" onclick="generateShareLink()">🔗 Link für Schüler kopieren</button>
-            <button class="teacher-btn-save" style="background:#888;" onclick="toggleTeacher(false)">Schließen</button>
-        </div>
-    </div>
-
-    <div id="wrapper1" class="game-wrapper g1-body">
-        <button class="back-btn" onclick="goToMenu()">🏠 Menü</button>
-        <div id="g1-container">
-            <div id="display-title-g1" class="game-title-header"></div>
-            <div class="box-status-container" id="g1-box-status"></div>
-            <div id="g1-game-screen">
-                <div id="g1-progress">Frage 1 von 10</div>
-                <div id="g1-word-display">Wort</div>
-                <div class="g1-btn-container">
-                    <button class="g1-btn g1-correct" onclick="Game1.handleAnswer(true)">RICHTIG</button>
-                    <button class="g1-btn g1-wrong" onclick="Game1.handleAnswer(false)">FALSCH</button>
-                </div>
-                <div id="g1-feedback"></div>
+            <h2>Einstellungen</h2>
+            <div style="margin-bottom:15px">
+                <b>Held:</b> <input type="text" id="t-title-1" placeholder="Titel" style="width:100%"><br>
+                <textarea id="t-input-1" style="width:100%; height:40px">Katze/r, Katse/f</textarea>
             </div>
-            <div id="g1-result-screen" class="hidden">
-                <h1>Fertig!</h1>
-                <div id="g1-final-score" style="font-size: 32px; margin: 20px 0;"></div>
-                <button class="g1-btn" style="background-color: #2196F3;" onclick="Game1.startGame()">Nächste Runde</button>
+            <div style="margin-bottom:15px">
+                <b>Profi 1:</b> <input type="text" id="t-title-2" placeholder="Titel" style="width:100%"><br>
+                <textarea id="t-input-2" style="width:100%; height:40px">Ka/tz/e, Ja/ck/e</textarea>
             </div>
-        </div>
-    </div>
-
-    <div id="wrapper2" class="game-wrapper g2-body">
-        <button class="back-btn" onclick="goToMenu()">🏠 Menü</button>
-        <div id="g2-container">
-            <div id="display-title-g2" class="game-title-header"></div>
-            <div class="box-status-container" id="g2-box-status"></div>
-            <div id="g2-game-screen">
-                <div id="g2-progress">Frage 1 von 10</div>
-                <div id="g2-word-container"></div>
-                <button class="g1-btn" style="background-color: #5d8aff; padding: 15px 45px;" onclick="Game2.checkInput()">Prüfen!</button>
-                <div id="g2-feedback"></div>
+            <div style="margin-bottom:15px">
+                <b>Profi 2:</b> <input type="text" id="t-title-3" placeholder="Titel" style="width:100%"><br>
+                <textarea id="t-input-3" style="width:100%; height:40px">Katze, Jacke</textarea>
             </div>
-            <div id="g2-result-screen" class="hidden">
-                <h1>Runde beendet!</h1>
-                <div id="g2-final-score" style="font-size: 32px; margin: 20px 0;"></div>
-                <button class="g1-btn" style="background-color: #4ecdc4;" onclick="Game2.startGame()">Nächste Runde</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="wrapper3" class="game-wrapper g3-body">
-        <button class="back-btn" onclick="goToMenu()">🏠 Menü</button>
-        <div id="g3-container">
-            <div id="display-title-g3" class="game-title-header"></div>
-            <div class="box-status-container" id="g3-box-status"></div>
-            <div id="g3-game-screen">
-                <div id="g3-progress-text">Wort 1 von 10</div>
-                <button class="g3-btn g3-btn-speak" onclick="Game3.speakWord()">🔊 Hören</button>
-                <div id="g3-word-display">???</div>
-                <button id="g3-show-btn" class="g3-btn g3-btn-show" onclick="Game3.showWord()">Vergleichen</button>
-                <div id="g3-choice-buttons" class="g3-choice-container">
-                    <button class="g3-btn" style="background-color: #4caf50;" onclick="Game3.handleResult(true)">✅ Stimmt</button>
-                    <button class="g3-btn" style="background-color: #f44336;" onclick="Game3.handleResult(false)">❌ Falsch</button>
-                </div>
-            </div>
-            <div id="g3-result-screen" class="hidden">
-                <h1>Fertig!</h1>
-                <div id="g3-final-score" style="font-size: 32px; margin: 20px 0;"></div>
-                <button class="g3-btn" style="background-color: #9c27b0;" onclick="Game3.startGame()">Nächste Runde</button>
-            </div>
+            <button class="menu-btn" style="background:#4CAF50" onclick="saveConfig()">Speichern & Schließen</button>
+            <button class="menu-btn" style="background:#2196f3" onclick="copyLink()">🔗 Link kopieren</button>
         </div>
     </div>
 
     <script>
-        function generateShareLink() {
-            const data = {
-                g1: document.getElementById('input-g1').value,
-                g2: document.getElementById('input-g2').value,
-                g3: document.getElementById('input-g3').value,
-                t1: document.getElementById('title-g1').value,
-                t2: document.getElementById('title-g2').value,
-                t3: document.getElementById('title-g3').value
-            };
-            const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
-            const url = window.location.origin + window.location.pathname + "?data=" + encoded;
-            navigator.clipboard.writeText(url).then(() => {
-                alert("Link mit Titeln kopiert!");
-            });
-        }
-
-        function loadFromURL() {
-            const params = new URLSearchParams(window.location.search);
-            const encodedData = params.get('data');
-            if (encodedData) {
-                try {
-                    const decoded = JSON.parse(decodeURIComponent(escape(atob(encodedData))));
-                    document.getElementById('input-g1').value = decoded.g1 || "";
-                    document.getElementById('input-g2').value = decoded.g2 || "";
-                    document.getElementById('input-g3').value = decoded.g3 || "";
-                    document.getElementById('title-g1').value = decoded.t1 || "";
-                    document.getElementById('title-g2').value = decoded.t2 || "";
-                    document.getElementById('title-g3').value = decoded.t3 || "";
-                    saveTeacherData(false); 
-                } catch(e) { console.error("URL-Daten fehlerhaft"); }
-            }
-        }
+        let currentActiveGame = 1;
 
         const BoxSystem = {
-            progress: {},
-            loadProgress() {
-                const saved = localStorage.getItem('box_progress');
-                this.progress = saved ? JSON.parse(saved) : {};
+            progress: JSON.parse(localStorage.getItem('box_progress') || '{}'),
+            save() { localStorage.setItem('box_progress', JSON.stringify(this.progress)); this.updateUI(); },
+            updateWord(word, correct) {
+                let b = this.progress[word] || 1;
+                this.progress[word] = correct ? Math.min(b + 1, 4) : 1;
+                this.save();
             },
-            saveProgress() {
-                localStorage.setItem('box_progress', JSON.stringify(this.progress));
-                this.updateBoxDisplay();
+            updateUI() {
+                const container = document.getElementById('box-status-bar');
+                const raw = document.getElementById(`t-input-${currentActiveGame}`).value.split(',').map(s=>s.trim()).filter(s=>s!=="");
+                let counts = {1:0, 2:0, 3:0, 4:0};
+                raw.forEach(w => counts[this.progress[w] || 1]++);
+                container.innerHTML = `
+                    <div class="box-indicator"><span class="box-label">Box 1</span><span class="box-count">${counts[1]}</span></div>
+                    <div class="box-indicator"><span class="box-label">Box 2</span><span class="box-count">${counts[2]}</span></div>
+                    <div class="box-indicator"><span class="box-label">Box 3</span><span class="box-count">${counts[3]}</span></div>
+                    <div class="box-indicator goal-box"><span class="box-label">Ziel</span><span class="box-count">${counts[4]}</span></div>
+                `;
             },
-            updateWord(entry, isCorrect) {
-                if (!this.progress[entry]) this.progress[entry] = 1;
-                if (isCorrect) {
-                    if (this.progress[entry] < 4) this.progress[entry]++;
-                } else {
-                    this.progress[entry] = 1;
-                }
-                this.saveProgress();
-            },
-            updateBoxDisplay() {
-                const games = ['g1', 'g2', 'g3'];
-                games.forEach(gameId => {
-                    const container = document.getElementById(`${gameId}-box-status`);
-                    if (!container) return;
-                    const rawText = document.getElementById(`input-${gameId}`).value;
-                    const allWords = rawText.split(',').map(w => w.trim()).filter(w => w !== "");
-                    let counts = { 1: 0, 2: 0, 3: 0, 4: 0 };
-                    allWords.forEach(w => {
-                        let b = this.progress[w] || 1;
-                        counts[b]++;
-                    });
-                    container.innerHTML = `
-                        <div class="box-indicator"><span class="box-label">Box 1</span><span class="box-count">${counts[1]}</span></div>
-                        <div class="box-indicator"><span class="box-label">Box 2</span><span class="box-count">${counts[2]}</span></div>
-                        <div class="box-indicator"><span class="box-label">Box 3</span><span class="box-count">${counts[3]}</span></div>
-                        <div class="box-indicator goal-box"><span class="box-label">Ziel</span><span class="box-count">${counts[4]}</span></div>
-                    `;
-                });
-            },
-            getSelection(allEntries) {
-                this.loadProgress();
-                let boxes = { 1: [], 2: [], 3: [] };
-                allEntries.forEach(e => {
-                    let box = this.progress[e] || 1;
-                    if (box <= 3) boxes[box].push(e);
-                });
-                if (boxes[1].length === 0 && boxes[2].length === 0 && boxes[3].length === 0) {
-                    return allEntries.sort(() => 0.5 - Math.random()).slice(0, 10);
-                }
-                let selection = [];
-                const pull = (boxNum, count) => {
-                    let shuffled = boxes[boxNum].sort(() => 0.5 - Math.random());
-                    for (let i = 0; i < count && shuffled.length > 0; i++) selection.push(shuffled.pop());
-                };
-                pull(1, 7);
-                pull(2, 2 + (7 - selection.length));
-                pull(3, 1 + (9 - selection.length));
-                while(selection.length < 10 && allEntries.length > 0) {
-                    selection.push(allEntries[Math.floor(Math.random() * allEntries.length)]);
-                }
-                return selection.slice(0, 10).sort(() => 0.5 - Math.random());
-            },
-            resetProgress() {
-                if(confirm("Lernstand löschen?")) {
-                    localStorage.removeItem('box_progress');
-                    this.progress = {};
-                    this.updateBoxDisplay();
-                    alert("Gelöscht!");
-                }
+            getSelection(words) {
+                return words.sort(() => 0.5 - Math.random()).slice(0, 10);
             }
         };
 
-        function saveTeacherData(alertUser = true) {
-            localStorage.setItem('g1_data', document.getElementById('input-g1').value);
-            localStorage.setItem('g2_data', document.getElementById('input-g2').value);
-            localStorage.setItem('g3_data', document.getElementById('input-g3').value);
-            localStorage.setItem('g1_title', document.getElementById('title-g1').value);
-            localStorage.setItem('g2_title', document.getElementById('title-g2').value);
-            localStorage.setItem('g3_title', document.getElementById('title-g3').value);
-            BoxSystem.updateBoxDisplay();
-            if(alertUser) { alert("Gespeichert!"); toggleTeacher(false); }
-        }
-
-        window.onload = function() {
-            if(localStorage.getItem('g1_data')) document.getElementById('input-g1').value = localStorage.getItem('g1_data');
-            if(localStorage.getItem('g2_data')) document.getElementById('input-g2').value = localStorage.getItem('g2_data');
-            if(localStorage.getItem('g3_data')) document.getElementById('input-g3').value = localStorage.getItem('g3_data');
-            if(localStorage.getItem('g1_title')) document.getElementById('title-g1').value = localStorage.getItem('g1_title');
-            if(localStorage.getItem('g2_title')) document.getElementById('title-g2').value = localStorage.getItem('g2_title');
-            if(localStorage.getItem('g3_title')) document.getElementById('title-g3').value = localStorage.getItem('g3_title');
-            loadFromURL();
-            BoxSystem.loadProgress();
-            BoxSystem.updateBoxDisplay();
-        };
-
-        function goToMenu() {
-            window.speechSynthesis.cancel();
-            document.querySelectorAll('.game-wrapper').forEach(w => w.style.display = 'none');
-            document.getElementById('main-menu').style.display = 'flex';
-        }
-
-        function toggleTeacher(s) { document.getElementById('teacher-overlay').style.display = s ? 'flex' : 'none'; }
-        
-        function updateDisplayTitles() {
-            document.getElementById('display-title-g1').innerText = document.getElementById('title-g1').value;
-            document.getElementById('display-title-g2').innerText = document.getElementById('title-g2').value;
-            document.getElementById('display-title-g3').innerText = document.getElementById('title-g3').value;
-        }
-
-        function startG1() { updateDisplayTitles(); document.getElementById('main-menu').style.display = 'none'; document.getElementById('wrapper1').style.display = 'flex'; Game1.startGame(); }
-        function startG2() { updateDisplayTitles(); document.getElementById('main-menu').style.display = 'none'; document.getElementById('wrapper2').style.display = 'flex'; Game2.startGame(); }
-        function startG3() { updateDisplayTitles(); document.getElementById('main-menu').style.display = 'none'; document.getElementById('wrapper3').style.display = 'flex'; Game3.startGame(); }
-
         const Game1 = {
-            currentRound: 0, score: 0, activePool: [], currentWord: [],
-            startGame() {
-                this.score = 0; this.currentRound = 0;
-                const raw = document.getElementById('input-g1').value.split(',').map(s=>s.trim()).filter(s=>s!=="");
-                this.activePool = BoxSystem.getSelection(raw);
-                BoxSystem.updateBoxDisplay();
-                document.getElementById('g1-result-screen').classList.add('hidden');
-                document.getElementById('g1-game-screen').classList.remove('hidden');
-                this.nextTurn();
+            pool: [], index: 0, score: 0, current: null,
+            init() {
+                const words = document.getElementById('t-input-1').value.split(',').map(s=>s.trim()).filter(s=>s!=="");
+                this.pool = BoxSystem.getSelection(words);
+                this.index = 0; this.score = 0; this.next();
             },
-            nextTurn() {
-                if (this.currentRound < 10 && this.activePool.length > 0) {
-                    let entry = this.activePool[this.currentRound % this.activePool.length];
-                    this.currentRound++;
-                    document.getElementById('g1-progress').innerText = `Frage ${this.currentRound} von 10`;
-                    document.getElementById('g1-feedback').innerText = "";
-                    let parts = entry.split('/');
-                    this.currentWord = [parts[0], parts[1].toLowerCase() === 'r', entry];
-                    document.getElementById('g1-word-display').innerText = this.currentWord[0];
-                } else { this.showResults(); }
+            next() {
+                if(this.index >= 10 || this.index >= this.pool.length) return showFinal();
+                let entry = this.pool[this.index++];
+                let p = entry.split('/');
+                this.current = { word: p[0], isRight: p[1].toLowerCase()==='r', raw: entry };
+                document.getElementById('g1-word').innerText = this.current.word;
+                document.getElementById('game-progress').innerText = `Frage ${this.index} von 10`;
+                document.getElementById('game-feedback').innerText = "";
             },
             handleAnswer(choice) {
-                const isCorrect = (choice === this.currentWord[1]);
-                BoxSystem.updateWord(this.currentWord[2], isCorrect);
-                const fb = document.getElementById('g1-feedback');
-                if (isCorrect) { this.score++; fb.innerText = "✅ Super!"; fb.style.color = "#4CAF50"; }
-                else { fb.innerText = "❌ Falsch!"; fb.style.color = "#F44336"; }
-                setTimeout(() => this.nextTurn(), 1000);
-            },
-            showResults() {
-                document.getElementById('g1-game-screen').classList.add('hidden');
-                document.getElementById('g1-result-screen').classList.remove('hidden');
-                document.getElementById('g1-final-score').innerText = `${this.score} von 10 richtig!`;
+                const win = (choice === this.current.isRight);
+                if(win) this.score++;
+                BoxSystem.updateWord(this.current.raw, win);
+                document.getElementById('game-feedback').innerText = win ? "✅ Super!" : "❌ Ups!";
+                setTimeout(() => this.next(), 800);
             }
         };
 
         const Game2 = {
-            activePool: [], currentRound: 0, score: 0, currentTask: {},
-            startGame() {
-                this.score = 0; this.currentRound = 0;
-                const raw = document.getElementById('input-g2').value.split(',').map(s=>s.trim()).filter(s=>s!=="");
-                this.activePool = BoxSystem.getSelection(raw);
-                BoxSystem.updateBoxDisplay();
-                document.getElementById('g2-result-screen').classList.add('hidden');
-                document.getElementById('g2-game-screen').classList.remove('hidden');
-                this.nextTurn();
+            pool: [], index: 0, score: 0, current: null,
+            init() {
+                const words = document.getElementById('t-input-2').value.split(',').map(s=>s.trim()).filter(s=>s!=="");
+                this.pool = BoxSystem.getSelection(words);
+                this.index = 0; this.score = 0; this.next();
             },
-            nextTurn() {
-                if (this.currentRound < 10 && this.activePool.length > 0) {
-                    let entry = this.activePool[this.currentRound % this.activePool.length];
-                    this.currentRound++;
-                    document.getElementById('g2-progress').innerText = `Frage ${this.currentRound} von 10`;
-                    document.getElementById('g2-feedback').innerText = "";
-                    let p = entry.split('/');
-                    this.currentTask = { prefix: p[0], solution: p[1], suffix: p[2], raw: entry };
-                    document.getElementById('g2-word-container').innerHTML = `${this.currentTask.prefix}<input type="text" id="g2-user-input" maxlength="10" autocomplete="off" autofocus>${this.currentTask.suffix}`;
-                    const input = document.getElementById('g2-user-input');
-                    input.focus();
-                    input.onkeypress = (e) => { if (e.key === 'Enter') this.checkInput(); };
-                } else { this.showResults(); }
+            next() {
+                if(this.index >= 10 || this.index >= this.pool.length) return showFinal();
+                let entry = this.pool[this.index++];
+                let p = entry.split('/');
+                this.current = { pre: p[0], sol: p[1], post: p[2], raw: entry };
+                document.getElementById('g2-pre').innerText = this.current.pre;
+                document.getElementById('g2-post').innerText = this.current.post;
+                const inp = document.getElementById('g2-user-input');
+                inp.value = ""; inp.disabled = false;
+                document.getElementById('game-progress').innerText = `Frage ${this.index} von 10`;
+                document.getElementById('game-feedback').innerText = "";
+                setTimeout(() => inp.focus(), 50);
             },
             checkInput() {
-                const inputField = document.getElementById('g2-user-input');
-                if (!inputField || inputField.disabled) return;
-                const isCorrect = (inputField.value.trim().toLowerCase() === this.currentTask.solution.toLowerCase());
-                BoxSystem.updateWord(this.currentTask.raw, isCorrect);
-                const fb = document.getElementById('g2-feedback');
-                if (isCorrect) { this.score++; fb.innerText = "✅ Toll!"; fb.style.color = "#4CAF50"; }
-                else { fb.innerText = `❌ Lösung: ${this.currentTask.solution}`; fb.style.color = "#F44336"; }
-                inputField.disabled = true;
-                setTimeout(() => this.nextTurn(), 1500);
-            },
-            showResults() {
-                document.getElementById('g2-game-screen').classList.add('hidden');
-                document.getElementById('g2-result-screen').classList.remove('hidden');
-                document.getElementById('g2-final-score').innerText = `${this.score} von 10 richtig!`;
+                const val = document.getElementById('g2-user-input').value.trim().toLowerCase();
+                const win = (val === this.current.sol.toLowerCase());
+                if(win) this.score++;
+                BoxSystem.updateWord(this.current.raw, win);
+                document.getElementById('g2-user-input').disabled = true;
+                document.getElementById('game-feedback').innerText = win ? "✅ Richtig!" : `❌ Lösung: ${this.current.sol}`;
+                setTimeout(() => this.next(), 1200);
             }
         };
 
         const Game3 = {
-            currentRound: 0, score: 0, activePool: [], currentWord: "",
-            startGame() {
-                this.score = 0; this.currentRound = 0;
-                const raw = document.getElementById('input-g3').value.split(',').map(w=>w.trim()).filter(w=>w!=="");
-                this.activePool = BoxSystem.getSelection(raw);
-                BoxSystem.updateBoxDisplay();
-                document.getElementById('g3-result-screen').classList.add('hidden');
-                document.getElementById('g3-game-screen').classList.remove('hidden');
-                this.nextTurn();
+            pool: [], index: 0, score: 0, current: "",
+            init() {
+                const words = document.getElementById('t-input-3').value.split(',').map(s=>s.trim()).filter(s=>s!=="");
+                this.pool = BoxSystem.getSelection(words);
+                this.index = 0; this.score = 0; this.next();
             },
-            nextTurn() {
-                if (this.currentRound < 10 && this.activePool.length > 0) {
-                    this.currentWord = this.activePool[this.currentRound % this.activePool.length];
-                    this.currentRound++;
-                    document.getElementById('g3-progress-text').innerText = `Wort ${this.currentRound} von 10`;
-                    document.getElementById('g3-word-display').innerText = "???";
-                    document.getElementById('g3-word-display').style.color = "#d32f2f";
-                    document.getElementById('g3-show-btn').style.display = "block";
-                    document.getElementById('g3-choice-buttons').style.display = "none";
-                    setTimeout(() => this.speakWord(), 500);
-                } else { this.showResults(); }
+            next() {
+                if(this.index >= 10 || this.index >= this.pool.length) return showFinal();
+                this.current = this.pool[this.index++];
+                document.getElementById('g3-word').innerText = "???";
+                document.getElementById('g3-show-btn').classList.remove('hidden');
+                document.getElementById('g3-choice').classList.add('hidden');
+                document.getElementById('game-progress').innerText = `Wort ${this.index} von 10`;
+                document.getElementById('game-feedback').innerText = "";
+                setTimeout(() => this.speakWord(), 500);
             },
             speakWord() {
-                const msg = new SpeechSynthesisUtterance(this.currentWord);
-                msg.lang = 'de-DE'; msg.rate = 0.8;
+                const msg = new SpeechSynthesisUtterance(this.current);
+                msg.lang = 'de-DE';
                 window.speechSynthesis.speak(msg);
             },
             showWord() {
-                document.getElementById('g3-word-display').innerText = this.currentWord;
-                document.getElementById('g3-word-display').style.color = "#2e7d32";
-                document.getElementById('g3-show-btn').style.display = "none";
-                document.getElementById('g3-choice-buttons').style.display = "flex";
+                document.getElementById('g3-word').innerText = this.current;
+                document.getElementById('g3-show-btn').classList.add('hidden');
+                document.getElementById('g3-choice').classList.remove('hidden');
             },
-            handleResult(isCorrect) {
-                BoxSystem.updateWord(this.currentWord, isCorrect);
-                if (isCorrect) this.score++;
-                this.nextTurn();
-            },
-            showResults() {
-                document.getElementById('g3-game-screen').classList.add('hidden');
-                document.getElementById('g3-result-screen').classList.remove('hidden');
-                document.getElementById('g3-final-score').innerText = `${this.score} von 10 richtig!`;
+            handleResult(win) {
+                if(win) this.score++;
+                BoxSystem.updateWord(this.current, win);
+                this.next();
             }
         };
+
+        function startGame(num) {
+            currentActiveGame = num;
+            document.getElementById('main-menu').style.display = 'none';
+            document.getElementById('game-wrapper').style.display = 'flex';
+            document.getElementById('game-content').classList.remove('hidden');
+            document.getElementById('result-screen').classList.add('hidden');
+            
+            document.getElementById('ui-g1').classList.toggle('hidden', num !== 1);
+            document.getElementById('ui-g2').classList.toggle('hidden', num !== 2);
+            document.getElementById('ui-g3').classList.toggle('hidden', num !== 3);
+            
+            const cont = document.getElementById('active-task-container');
+            cont.className = 'task-container g' + num + '-border';
+            
+            document.getElementById('game-title').innerText = document.getElementById('t-title-' + num).value;
+            
+            BoxSystem.updateUI();
+            if(num === 1) Game1.init();
+            if(num === 2) Game2.init();
+            if(num === 3) Game3.init();
+        }
+
+        function showFinal() {
+            document.getElementById('game-content').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+            let s = currentActiveGame === 1 ? Game1.score : (currentActiveGame === 2 ? Game2.score : Game3.score);
+            document.getElementById('result-text').innerText = `Fertig! ${s} von 10 Punkten!`;
+        }
+
+        function restartCurrentGame() { startGame(currentActiveGame); }
+        function goToMenu() { location.reload(); }
+        function toggleTeacher(s) { document.getElementById('teacher-overlay').style.display = s ? 'flex' : 'none'; }
+
+        function saveConfig() {
+            for(let i=1; i<=3; i++) {
+                localStorage.setItem('g'+i+'_data', document.getElementById('t-input-'+i).value);
+                localStorage.setItem('g'+i+'_title', document.getElementById('t-title-'+i).value);
+            }
+            toggleTeacher(false);
+        }
+
+        function copyLink() {
+            const data = {
+                v: 2,
+                t: [document.getElementById('t-title-1').value, document.getElementById('t-title-2').value, document.getElementById('t-title-3').value],
+                d: [document.getElementById('t-input-1').value, document.getElementById('t-input-2').value, document.getElementById('t-input-3').value]
+            };
+            const url = window.location.origin + window.location.pathname + "?config=" + btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+            navigator.clipboard.writeText(url).then(() => alert("Link kopiert!"));
+        }
+
+        window.onload = () => {
+            for(let i=1; i<=3; i++) {
+                if(localStorage.getItem('g'+i+'_data')) document.getElementById('t-input-'+i).value = localStorage.getItem('g'+i+'_data');
+                if(localStorage.getItem('g'+i+'_title')) document.getElementById('t-title-'+i).value = localStorage.getItem('g'+i+'_title');
+            }
+            const params = new URLSearchParams(window.location.search);
+            if(params.get('config')) {
+                const conf = JSON.parse(decodeURIComponent(escape(atob(params.get('config')))));
+                conf.t.forEach((t, i) => document.getElementById('t-title-'+(i+1)).value = t);
+                conf.d.forEach((d, i) => document.getElementById('t-input-'+(i+1)).value = d);
+                saveConfig();
+            }
+        };
+
+        // Enter-Taste Support für Spiel 2
+        document.getElementById('g2-user-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') Game2.checkInput();
+        });
     </script>
 </body>
 </html>
