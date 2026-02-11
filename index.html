@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lernspiel-Sammlung - Schul-Edition</title>
+    <style>
+        /* --- DESIGN (Gleichbleibend) --- */
+        #main-menu {
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            height: 100vh; background: linear-gradient(135deg, #7ed957, #5d8aff);
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+        }
+        .menu-card { background: white; padding: 40px; border-radius: 40px; text-align: center; box-shadow: 0 15px 30px rgba(0,0,0,0.2); width: 320px; }
+        .menu-btn {
+            display: block; width: 100%; padding: 20px; margin: 15px 0;
+            font-size: 22px; font-weight: bold; border: none; border-radius: 20px;
+            cursor: pointer; color: white; transition: 0.2s;
+        }
+        .btn-g1 { background-color: #4CAF50; }
+        .btn-g2 { background-color: #5d8aff; }
+        .btn-g3 { background-color: #ff9800; }
+        
+        .game-wrapper { display: none; width: 100%; height: 100vh; position: relative; }
+        .back-btn {
+            position: absolute; top: 10px; left: 10px; padding: 8px 15px;
+            background: #333; color: white; border-radius: 10px; cursor: pointer;
+            font-family: sans-serif; font-size: 14px; z-index: 1000; border: none;
+        }
+
+        /* --- BOX-VISUALISIERUNG --- */
+        .box-status-container {
+            display: flex; gap: 8px; justify-content: center; margin-bottom: 15px;
+            font-family: sans-serif;
+        }
+        .box-indicator {
+            background: #f0f0f0; border: 2px solid #ccc; border-radius: 8px;
+            padding: 5px 10px; min-width: 40px; text-align: center;
+        }
+        .box-indicator.goal-box { border-color: #ffd700; background: #fffdf0; font-weight: bold; }
+        .box-label { font-size: 10px; display: block; color: #666; }
+        .box-count { font-size: 18px; font-weight: bold; color: #333; }
+
+        /* --- LEHRERBEREICH & URL SPEZIAL --- */
+        #teacher-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 2000; display: none;
+            justify-content: center; align-items: center; font-family: sans-serif;
+        }
+        .teacher-card { background: white; padding: 20px; border-radius: 20px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
+        .teacher-btn-save { background: #4CAF50; color: white; border: none; padding: 12px; border-radius: 10px; cursor: pointer; margin-top: 10px; width: 100%; font-weight: bold; }
+        .teacher-btn-link { background: #2196F3; color: white; border: none; padding: 12px; border-radius: 10px; cursor: pointer; margin-top: 5px; width: 100%; font-weight: bold; }
+        
+        /* Standard Spiel-Styles */
+        .g1-body { background-color: #eef9bf; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Comic Sans MS', cursive; }
+        .g2-body { background-color: #f0f4ff; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Comic Sans MS', cursive; }
+        .g3-body { background-color: #e0f7fa; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Comic Sans MS', cursive; }
+        .container { background: white; padding: 30px; border-radius: 40px; text-align: center; width: 90%; max-width: 600px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        input[type="text"] { font-size: 40px; width: 120px; text-align: center; border: 3px dashed #5d8aff; border-radius: 10px; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div id="main-menu">
+        <div class="menu-card">
+            <h1>Lernspiel</h1>
+            <button class="menu-btn btn-g1" onclick="startG1()">Held</button>
+            <button class="menu-btn btn-g2" onclick="startG2()">Profi</button>
+            <button class="menu-btn btn-g3" onclick="startG3()">Schreiber</button>
+            <button class="menu-btn" style="background:#9c27b0; font-size:14px;" onclick="toggleTeacher(true)">⚙️ Lehrerbereich</button>
+        </div>
+    </div>
+
+    <div id="teacher-overlay">
+        <div class="teacher-card">
+            <h2>Einstellungen</h2>
+            <label>Spiel 1 (Wort/r, Wort/f)</label>
+            <textarea id="input-g1" style="width:100%; height:50px;"></textarea>
+            <label>Spiel 2 (Prefix/Lücke/Suffix)</label>
+            <textarea id="input-g2" style="width:100%; height:50px;"></textarea>
+            <label>Spiel 3 (Nur Wörter)</label>
+            <textarea id="input-g3" style="width:100%; height:50px;"></textarea>
+            
+            <button class="teacher-btn-save" onclick="saveTeacherData()">Lokal Speichern</button>
+            <button class="teacher-btn-link" onclick="generateShareLink()">🔗 Link für Schüler kopieren</button>
+            <button class="teacher-btn-save" style="background:#888;" onclick="toggleTeacher(false)">Schließen</button>
+        </div>
+    </div>
+
+    <div id="wrapper1" class="game-wrapper g1-body">
+        <button class="back-btn" onclick="goToMenu()">🏠 Menü</button>
+        <div class="container">
+            <div class="box-status-container" id="g1-box-status"></div>
+            <div id="g1-game-screen">
+                <div id="g1-progress">1/10</div>
+                <div id="g1-word-display" style="font-size:50px; margin:20px;">Wort</div>
+                <button class="menu-btn btn-g1" onclick="Game1.handleAnswer(true)">RICHTIG</button>
+                <button class="menu-btn btn-g3" style="background:#f44336" onclick="Game1.handleAnswer(false)">FALSCH</button>
+                <div id="g1-feedback" style="font-size:24px; font-weight:bold;"></div>
+            </div>
+            <div id="g1-result-screen" class="hidden">
+                <h2>Runde beendet!</h2>
+                <div id="g1-final-score"></div>
+                <button class="menu-btn btn-g1" onclick="Game1.startGame()">Nächste Runde</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="wrapper2" class="game-wrapper g2-body">
+        <button class="back-btn" onclick="goToMenu()">🏠 Menü</button>
+        <div class="container">
+            <div class="box-status-container" id="g2-box-status"></div>
+            <div id="g2-game-screen">
+                <div id="g2-progress">1/10</div>
+                <div id="g2-word-container" style="font-size:40px; margin:20px;"></div>
+                <button class="menu-btn btn-g2" onclick="Game2.checkInput()">Prüfen</button>
+                <div id="g2-feedback"></div>
+            </div>
+            <div id="g2-result-screen" class="hidden">
+                <h2>Runde beendet!</h2>
+                <div id="g2-final-score"></div>
+                <button class="menu-btn btn-g2" onclick="Game2.startGame()">Nächste Runde</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="wrapper3" class="game-wrapper g3-body">
+        <button class="back-btn" onclick="goToMenu()">🏠 Menü</button>
+        <div class="container">
+            <div class="box-status-container" id="g3-box-status"></div>
+            <div id="g3-game-screen">
+                <div id="g3-progress-text">1/10</div>
+                <button class="menu-btn btn-g3" onclick="Game3.speakWord()">🔊 Hören</button>
+                <div id="g3-word-display" style="font-size:50px; margin:20px;">???</div>
+                <button id="g3-show-btn" class="menu-btn btn-g2" onclick="Game3.showWord()">Vergleichen</button>
+                <div id="g3-choice-buttons" class="hidden">
+                    <button class="menu-btn btn-g1" onclick="Game3.handleResult(true)">✅ Stimmt</button>
+                    <button class="menu-btn btn-g3" style="background:#f44336" onclick="Game3.handleResult(false)">❌ Falsch</button>
+                </div>
+            </div>
+            <div id="g3-result-screen" class="hidden">
+                <h2>Runde beendet!</h2>
+                <div id="g3-final-score"></div>
+                <button class="menu-btn btn-g3" onclick="Game3.startGame()">Nächste Runde</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- URL & SHARE LOGIK ---
+        function generateShareLink() {
+            const data = {
+                g1: document.getElementById('input-g1').value,
+                g2: document.getElementById('input-g2').value,
+                g3: document.getElementById('input-g3').value
+            };
+            // In Base64 umwandeln, damit die URL sauber bleibt
+            const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+            const url = window.location.origin + window.location.pathname + "?data=" + encoded;
+            
+            navigator.clipboard.writeText(url).then(() => {
+                alert("Link wurde kopiert! Diesen Link können die Schüler nun öffnen.");
+            });
+        }
+
+        function loadFromURL() {
+            const params = new URLSearchParams(window.location.search);
+            const encodedData = params.get('data');
+            if (encodedData) {
+                try {
+                    const decoded = JSON.parse(decodeURIComponent(escape(atob(encodedData))));
+                    document.getElementById('input-g1').value = decoded.g1;
+                    document.getElementById('input-g2').value = decoded.g2;
+                    document.getElementById('input-g3').value = decoded.g3;
+                    saveTeacherData(false); // Lokal sichern ohne Alert
+                } catch(e) { console.error("URL-Daten fehlerhaft"); }
+            }
+        }
+
+        // --- BOX SYSTEM ---
+        const BoxSystem = {
+            progress: {},
+            loadProgress() { this.progress = JSON.parse(localStorage.getItem('box_progress') || '{}'); },
+            saveProgress() { localStorage.setItem('box_progress', JSON.stringify(this.progress)); this.updateBoxDisplay(); },
+            updateWord(entry, isCorrect) {
+                if (!this.progress[entry]) this.progress[entry] = 1;
+                isCorrect ? (this.progress[entry] < 4 && this.progress[entry]++) : (this.progress[entry] = 1);
+                this.saveProgress();
+            },
+            updateBoxDisplay() {
+                ['g1', 'g2', 'g3'].forEach(id => {
+                    const container = document.getElementById(`${id}-box-status`);
+                    const words = document.getElementById(`input-${id}`).value.split(',').map(w=>w.trim()).filter(w=>w!=="");
+                    let counts = {1:0, 2:0, 3:0, 4:0};
+                    words.forEach(w => counts[this.progress[w] || 1]++);
+                    if(container) container.innerHTML = `
+                        <div class="box-indicator"><span class="box-label">B1</span><span class="box-count">${counts[1]}</span></div>
+                        <div class="box-indicator"><span class="box-label">B2</span><span class="box-count">${counts[2]}</span></div>
+                        <div class="box-indicator"><span class="box-label">B3</span><span class="box-count">${counts[3]}</span></div>
+                        <div class="box-indicator goal-box"><span class="box-label">Ziel</span><span class="box-count">${counts[4]}</span></div>`;
+                });
+            },
+            getSelection(allEntries) {
+                let boxes = {1:[], 2:[], 3:[]};
+                allEntries.forEach(e => { let b = this.progress[e] || 1; if(b < 4) boxes[b].push(e); });
+                let sel = [];
+                const pull = (b, n) => { let sh = boxes[b].sort(()=>0.5-Math.random()); for(let i=0; i<n && sh.length>0; i++) sel.push(sh.pop()); };
+                pull(1, 7); pull(2, 2+(7-sel.length)); pull(3, 1+(9-sel.length));
+                while(sel.length < 10 && allEntries.length > 0) sel.push(allEntries[Math.floor(Math.random()*allEntries.length)]);
+                return sel.slice(0, 10);
+            }
+        };
+
+        // --- CORE LOGIK ---
+        function saveTeacherData(alertUser = true) {
+            localStorage.setItem('g1_data', document.getElementById('input-g1').value);
+            localStorage.setItem('g2_data', document.getElementById('input-g2').value);
+            localStorage.setItem('g3_data', document.getElementById('input-g3').value);
+            BoxSystem.updateBoxDisplay();
+            if(alertUser) alert("Gespeichert!");
+        }
+
+        window.onload = () => {
+            if(localStorage.getItem('g1_data')) document.getElementById('input-g1').value = localStorage.getItem('g1_data');
+            if(localStorage.getItem('g2_data')) document.getElementById('input-g2').value = localStorage.getItem('g2_data');
+            if(localStorage.getItem('g3_data')) document.getElementById('input-g3').value = localStorage.getItem('g3_data');
+            loadFromURL();
+            BoxSystem.loadProgress();
+            BoxSystem.updateBoxDisplay();
+        };
+
+        function goToMenu() { window.speechSynthesis.cancel(); document.querySelectorAll('.game-wrapper').forEach(w => w.style.display = 'none'); document.getElementById('main-menu').style.display = 'flex'; }
+        function toggleTeacher(s) { document.getElementById('teacher-overlay').style.display = s ? 'flex' : 'none'; }
+        function startG1() { document.getElementById('main-menu').style.display = 'none'; document.getElementById('wrapper1').style.display = 'flex'; Game1.startGame(); }
+        function startG2() { document.getElementById('main-menu').style.display = 'none'; document.getElementById('wrapper2').style.display = 'flex'; Game2.startGame(); }
+        function startG3() { document.getElementById('main-menu').style.display = 'none'; document.getElementById('wrapper3').style.display = 'flex'; Game3.startGame(); }
+
+        // --- SPIEL 1 ---
+        const Game1 = {
+            currentRound: 0, score: 0, pool: [], cur: [],
+            startGame() {
+                this.score = 0; this.currentRound = 0;
+                this.pool = BoxSystem.getSelection(document.getElementById('input-g1').value.split(',').map(s=>s.trim()).filter(s=>s!==""));
+                document.getElementById('g1-result-screen').classList.add('hidden');
+                document.getElementById('g1-game-screen').classList.remove('hidden');
+                this.nextTurn();
+            },
+            nextTurn() {
+                if (this.currentRound < 10 && this.pool.length > 0) {
+                    let entry = this.pool[this.currentRound++];
+                    document.getElementById('g1-progress').innerText = `${this.currentRound}/10`;
+                    document.getElementById('g1-feedback').innerText = "";
+                    let p = entry.split('/');
+                    this.cur = [p[0], p[1].toLowerCase() === 'r', entry];
+                    document.getElementById('g1-word-display').innerText = this.cur[0];
+                } else this.showResults();
+            },
+            handleAnswer(c) {
+                const ok = (c === this.cur[1]); BoxSystem.updateWord(this.cur[2], ok);
+                if(ok) this.score++;
+                document.getElementById('g1-feedback').innerText = ok ? "✅" : "❌";
+                setTimeout(() => this.nextTurn(), 800);
+            },
+            showResults() { document.getElementById('g1-game-screen').classList.add('hidden'); document.getElementById('g1-result-screen').classList.remove('hidden'); document.getElementById('g1-final-score').innerText = `${this.score}/10 richtig`; }
+        };
+
+        // --- SPIEL 2 ---
+        const Game2 = {
+            currentRound: 0, score: 0, pool: [], task: {},
+            startGame() {
+                this.score = 0; this.currentRound = 0;
+                this.pool = BoxSystem.getSelection(document.getElementById('input-g2').value.split(',').map(s=>s.trim()).filter(s=>s!==""));
+                document.getElementById('g2-result-screen').classList.add('hidden');
+                document.getElementById('g2-game-screen').classList.remove('hidden');
+                this.nextTurn();
+            },
+            nextTurn() {
+                if (this.currentRound < 10 && this.pool.length > 0) {
+                    let e = this.pool[this.currentRound++];
+                    document.getElementById('g2-progress').innerText = `${this.currentRound}/10`;
+                    document.getElementById('g2-feedback').innerText = "";
+                    let p = e.split('/');
+                    this.task = {pre: p[0], sol: p[1], suf: p[2], raw: e};
+                    document.getElementById('g2-word-container').innerHTML = `${this.task.pre}<input type="text" id="g2-in">${this.task.suf}`;
+                    const input = document.getElementById('g2-in'); input.focus();
+                    input.onkeypress = (e) => { if(e.key==='Enter') this.checkInput(); };
+                } else this.showResults();
+            },
+            checkInput() {
+                let val = document.getElementById('g2-in').value.trim().toLowerCase();
+                let ok = (val === this.task.sol.toLowerCase());
+                BoxSystem.updateWord(this.task.raw, ok);
+                if(ok) this.score++;
+                document.getElementById('g2-feedback').innerText = ok ? "✅" : "❌ Lösung: " + this.task.sol;
+                setTimeout(() => this.nextTurn(), 1500);
+            },
+            showResults() { document.getElementById('g2-game-screen').classList.add('hidden'); document.getElementById('g2-result-screen').classList.remove('hidden'); document.getElementById('g2-final-score').innerText = `${this.score}/10 richtig`; }
+        };
+
+        // --- SPIEL 3 ---
+        const Game3 = {
+            currentRound: 0, score: 0, pool: [], cur: "",
+            startGame() {
+                this.score = 0; this.currentRound = 0;
+                this.pool = BoxSystem.getSelection(document.getElementById('input-g3').value.split(',').map(s=>s.trim()).filter(s=>s!==""));
+                document.getElementById('g3-result-screen').classList.add('hidden');
+                document.getElementById('g3-game-screen').classList.remove('hidden');
+                this.nextTurn();
+            },
+            nextTurn() {
+                if (this.currentRound < 10 && this.pool.length > 0) {
+                    this.cur = this.pool[this.currentRound++];
+                    document.getElementById('g3-progress-text').innerText = `${this.currentRound}/10`;
+                    document.getElementById('g3-word-display').innerText = "???";
+                    document.getElementById('g3-show-btn').classList.remove('hidden');
+                    document.getElementById('g3-choice-buttons').classList.add('hidden');
+                    setTimeout(() => this.speakWord(), 400);
+                } else this.showResults();
+            },
+            speakWord() { const m = new SpeechSynthesisUtterance(this.cur); m.lang='de-DE'; window.speechSynthesis.speak(m); },
+            showWord() { 
+                document.getElementById('g3-word-display').innerText = this.cur;
+                document.getElementById('g3-show-btn').classList.add('hidden');
+                document.getElementById('g3-choice-buttons').classList.remove('hidden');
+            },
+            handleResult(ok) {
+                BoxSystem.updateWord(this.cur, ok);
+                if(ok) this.score++;
+                this.nextTurn();
+            },
+            showResults() { document.getElementById('g3-game-screen').classList.add('hidden'); document.getElementById('g3-result-screen').classList.remove('hidden'); document.getElementById('g3-final-score').innerText = `${this.score}/10 richtig`; }
+        };
+    </script>
+</body>
+</html>
